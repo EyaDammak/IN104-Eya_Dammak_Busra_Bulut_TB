@@ -134,11 +134,12 @@ class Consumption:
         self.b=g[1]
         self.c=g[2]
         self.d=g[3]
-        
+                
 
     #calculate the consumption given a temperature
     def get_consumption(self, temperature):
-        self.h=self.d+self.a/(1+(self.b/(temperature-40))**self.c)
+        self.temperature=temperature
+        self.h=self.d+self.a/(1+(self.b/(self.temperature-40))**self.c)
         return(self.h)
         
         
@@ -192,9 +193,9 @@ class Optimize_sigmoid:
             real_conso =self.__f['LDZ'].values
             guess_values=[Optimize_sigmoid.guess_a,Optimize_sigmoid.guess_b,Optimize_sigmoid.guess_c, Optimize_sigmoid.guess_d]
             #on trouve les meilleurs parametres
-            self.__coef, self.__cov = curve_fit(h, self.T, real_conso, guess_values) 
+            self.coef, self.__cov = curve_fit(h, self.T, real_conso, guess_values) 
             #on construit le modele de consommation avec les paramètres optimaux
-            self.model_ajust_conso = consumption_sigmoid(self.__f,self.__coef, True)
+            self.model_ajust_conso = consumption_sigmoid(self.__f,self.coef, True)
             #on calcule les métrics pour s'assurer de la proximité entre le model et la vrai courbe de consommation
             self.__corr, self.__rmse, self.__nrmse, self.__anrmse = get_fit_metrics( self.model_ajust_conso, real_conso)
         else:
@@ -213,7 +214,7 @@ class Optimize_sigmoid:
     def create_Consumption(self):
         if self.__f is not None:
             #je définit la classe consommation avec les paramètres optimaux
-            h=Consumption(self.__coef)
+            h=Consumption(self.coef)
             return h
         else:
             print("optimize method is not yet run")

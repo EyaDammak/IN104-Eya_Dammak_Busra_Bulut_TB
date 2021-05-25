@@ -95,7 +95,7 @@ class Prediction:
         cm=confusion_matrix(y_test, self.y_pred)
         probs=lr.predict_proba(X_test)[:,1] 
         self.metrics_lr[self.key]={'recall': metrics.recall_score(y_test, self.y_pred), 'neg_recall': cm[1,1]/(cm[0,1] + cm[1,1]), 'confusion': cm, 'precision': metrics.precision_score(y_test, self.y_pred), 'neg_precision':cm[1,1]/cm.sum(axis=1)[1], 'roc': metrics.roc_auc_score(y_test, probs),'class_mod': lr}
-        return(self.y_pred)
+        return()
     
     
     
@@ -143,14 +143,19 @@ class Prediction:
         
         
         
+   
     
-    def regression_lineaire(self,choix_modele):  #choix_modele=0 si on est dans le supply-model 
+    def regression_lineaire(self,choix_modele,dict):  #choix_modele=0 si on est dans le supply-model 
         self.metrics_lineaire={}
+        self.dict_storage_join=dict
         L=[]
-        if choix_modele==0: #nopus sommes dans le supply_modele          
+        if choix_modele==0: #nous sommes dans le supply_modele          
             NWB=self.dict_storage_join[self.key]['Net withdrawal binary']
+            
         else:
-            NWB=self.y_pred_train+self.y_pred  #vecteur de y_pred complet
+            NWB=self.dict_storage_join[self.key]['y_pred_binary']  #vecteur de y_pred complet
+            
+            
         f = self.dict_storage_join[self.key] >> mask(NWB > 0)
         print(f)
         #print(dict_storage_join[self.key])
@@ -165,15 +170,24 @@ class Prediction:
         
         if choix_modele==0:#nopus sommes dans le supply_modele     
             self.Y_mod_pred=rg.predict(X_test)
+            rmse = np.sqrt(mean_squared_error(self.Y_mod_pred,Y_test))
+            nrmse = rmse/(np.max(Y_test) - np.min(Y_test))
+            anrmse = rmse/np.mean(Y_test)
+            corr=r2_score(self.Y_mod_pred,Y_test)
+            self.metrics_lineaire[self.key] = {'r2': metrics.r2_score(Y_test, self.Y_mod_pred), 'rmse': rmse, 'nrmse': nrmse, 'anrmse': anrmse, 'cor': corr, 'l_reg': rg}
+            self.a=rg.coef_
+            self.b=rg.intercept_
         else:
             self.Y_mod_pred=rg.predict(X_mod) 
-        rmse = np.sqrt(mean_squared_error(self.Y_mod_pred,Y_test))
-        nrmse = rmse/(np.max(Y_test) - np.min(Y_test))
-        anrmse = rmse/np.mean(Y_test)
-        corr=r2_score(self.Y_mod_pred,Y_test)
-        self.metrics_lineaire[self.key] = {'r2': metrics.r2_score(Y_test, self.Y_mod_pred), 'rmse': rmse, 'nrmse': nrmse, 'anrmse': anrmse, 'cor': corr, 'l_reg': rg}
-        self.a=rg.coef_
-        self.b=rg.intercept_
+            rmse = np.sqrt(mean_squared_error(self.Y_mod_pred,Y_mod))
+            nrmse = rmse/(np.max(Y_mod) - np.min(Y_mod))
+            anrmse = rmse/np.mean(Y_mod)
+            corr=r2_score(self.Y_mod_pred,Y_mod)
+            self.metrics_lineaire[self.key] = {'r2': metrics.r2_score(Y_mod, self.Y_mod_pred), 'rmse': rmse, 'nrmse': nrmse, 'anrmse': anrmse, 'cor': corr, 'l_reg': rg}
+            self.a=rg.coef_
+            self.b=rg.intercept_
+            
+        
         return self.metrics_lineaire
     
 
@@ -182,10 +196,12 @@ class Prediction:
         
     #def __str__(self):
         
-#if __name__ == '__main__':
-    #dict_storage=pd.read_excel('storage_data.xlsx',sheet_name=None)
-    #df_price=pd.read_excel('price_data.xlsx')
-    #dict_storage_join=preparer_le_dict_à_la_prediction(dict_storage,df_price)
-    #prediction=Prediction(dict_storage_join)
+if __name__ == '__main__':
+    dict_storage=pd.read_excel('storage_data.xlsx',sheet_name=None)
+    df_price=pd.read_excel('price_data.xlsx')
+    dict_storage_join=preparer_le_dict_à_la_prediction(dict_storage,df_price)
+    for key in dict_storage_join:
+        prediction=Prediction(dict_storage_join,key)
     #prediction.
+    
     
